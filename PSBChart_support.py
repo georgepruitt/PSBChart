@@ -75,7 +75,7 @@ def manageTrades(trades,indicatorList):
                 print("Trades ",tradeDate[-1]," ",tradePrice[-1])
             tradeCnt = cnt
         trades.setLoadDraw(False,True)
-    w.Button5.configure(state = "disable")    
+    w.Button5.configure(state = "disable")
     loadAndDraw(False,True,indicatorList,trades)
 
 
@@ -225,47 +225,71 @@ def loadAndDraw(load,draw,indicatorList,trades):
             debugTradeDate = tradeDate[0]
             debugDate = d[startPt]
             n = 0
+            trtl.penup()
             while debugTradeDate <= debugDate:
                 n +=1
                 debugTradeDate = tradeDate[n]
-
             m = 0
             for i in range(startPt,startPt+numBarsPlot):
                 m = m + 1
                 debugDate = d[i]
                 if debugDate == debugTradeDate:
-                    trtl.penup()
-                    tradeValue = tradePrice[n]
-                    if tradeType[n] == "buy": 
-                        trtl.color("Green")                    
-                        trtl.goto(m*10-5,tradeValue - hhllDiff *.03)
-                        trtl.pensize(3)
-                        trtl.pendown()
-                        trtl.goto(m*10,tradeValue)
-                        trtl.goto(m*10+5,tradeValue - hhllDiff *.03)
-                        trtl.penup()
-                    if tradeType[n] == "sell":
-                        trtl.color("Red")
-                        trtl.goto(m*10-5,tradeValue + hhllDiff *.03)
-                        trtl.pensize(3)
-                        trtl.pendown()
-                        trtl.goto(m*10,tradeValue)
-                        trtl.goto(m*10+5,tradeValue + hhllDiff *.03)
-                        trtl.penup()
-                    if tradeType[n] == "longLiq":
-                        trtl.color("Blue")
-                        trtl.penup()
-                        trtl.goto(m*10-5, tradeValue)
-                        trtl.pensize(3) 
-                        trtl.pendown()
-                        trtl.goto(m*10+5, tradeValue)
-                        trtl.penup()                       
-                    trtl.pensize(1)
-                    print("Found a trade: ",tradeValue," ",debugTradeDate," m= ",m," ",tradeValue-hhllDiff*.05)
-                    n+=1
-                    if n < len(tradeDate): debugTradeDate = tradeDate[n]
-                
-        
+#                    trtl.penup()
+                    tradesTodayCnt = n
+                    tradesToday = 0
+                    while tradeDate[tradesTodayCnt] == d[i]:
+                        tradesToday+=1
+                        tradesTodayCnt+=1
+                    print("Found Trades ",tradesToday)
+                    for k in range(tradesToday):
+                        tradeValue = tradePrice[n]
+                        nextTradeValue = c[startPt+numBarsPlot-1]
+                        if n < len(tradePrice):
+                            nextTradeValue = tradePrice[n+1]
+                        if tradeType[n] == "buy":
+                            trtl.color("Green")
+                            trtl.goto(m*10-5,tradeValue - hhllDiff *.03)
+                            trtl.pensize(3)
+                            trtl.pendown()
+                            trtl.goto(m*10,tradeValue)
+                            trtl.goto(m*10+5,tradeValue - hhllDiff *.03)
+                            trtl.penup()
+                            trtl.goto(m*10,tradeValue)
+                            trtl.pendown()
+                            trtl.pencolor("Red")
+                            if nextTradeValue > tradeValue: trtl.pencolor("Green")
+    #                        trtl.penup()
+                        if tradeType[n] == "sell":
+                            trtl.color("Red")
+                            trtl.goto(m*10-5,tradeValue + hhllDiff *.03)
+                            trtl.pensize(3)
+                            trtl.pendown()
+                            trtl.goto(m*10,tradeValue)
+                            trtl.goto(m*10+5,tradeValue + hhllDiff *.03)
+                            trtl.penup()
+                            trtl.goto(m*10,tradeValue)
+                            trtl.pendown()
+                            trtl.pencolor("Red")
+                            if nextTradeValue < tradeValue: trtl.pencolor("Green")
+    #                        trtl.penup()
+
+                        if tradeType[n] == "longLiq" or tradeType[n] == "shortLiq":
+    #                        trtl.penup()
+                            trtl.goto(m*10-5, tradeValue)
+                            trtl.color("Blue")
+                            trtl.pensize(4)
+                            trtl.pendown()
+                            trtl.goto(m*10+5, tradeValue)
+                            trtl.penup()
+                        trtl.pensize(1)
+                        print("Found a trade: ",tradeValue," ",nextTradeValue)
+                        n+=1
+                        if n < len(tradeDate): debugTradeDate = tradeDate[n]
+            if i == startPt + numBarsPlot -1 and trtl.isdown():
+                trtl.goto(m*10,nextTradeValue)
+                trtl.penup()
+
+
 
         trtl.color("black")
         trtl.goto(-10,botOfChart)
