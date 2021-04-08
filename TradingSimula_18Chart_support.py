@@ -25,6 +25,37 @@ except ImportError:
     import tkinter.ttk as ttk
     py3 = True
 
+def parseDate(dateString):
+    whereIsAslash = dateString.find('/')
+    if whereIsAslash != -1:
+        firstSlashLoc = whereIsAslash
+        x = dateString[0:whereIsAslash]
+        tempStr = dateString[whereIsAslash+1:len(dateString)]
+        whereIsAslash = tempStr.find('/')
+        y = tempStr[0:whereIsAslash]
+        z = tempStr[whereIsAslash+1:len(tempStr)]
+        if firstSlashLoc < 4:
+            tempDate = int(z)*10000 + int(x)*100 + int(y)
+        else:
+            tempStr = dateString.replace('/','')
+            tempDate = int(tempStr)
+        return(tempDate)
+    whereIsAdash = dateString.find('-')
+    if whereIsAdash != -1:
+        firstDashLoc = whereIsAdash
+        x = dateString[0:whereIsAslash]
+        tempStr = dateString[whereIsAslash+1:len(dateString)]
+        whereIsAslash = tempStr.find('/')
+        y = tempStr[0:whereIsAslash]
+        z = tempStr[whereIsAslash+1:len(tempStr)]
+        if firstSlashLoc < 4:
+            tempDate = int(z)*10000 + int(x)*100 + int(y)
+        else:
+            tempStr = dateString.replace('-','')
+            tempDate = int(tempStr)
+        return(tempDate)
+    return(int(dateString))
+
 class ManageTrades(object):
     def __init__(self):
         self.load = True
@@ -48,6 +79,7 @@ bolBandList = list()
 movAvgList = list()
 donchChanList = list()
 tradeDate = list()
+tradeSymbol = list()
 tradeVal1 = list()
 tradeType = list()
 tradeSize = list()
@@ -152,14 +184,21 @@ def manageTrades(trades,indicatorList):
                     cnt += 1
                     tradeDate.append(int(row[0]))
     #                dt.append(datetime.datetime.strptime(row[0],'%Y%m%d'))
+                    tSymbol =row[1]
                     tradeSymbol.append(row[1])
                     tradeVal1.append(int(row[2]))
                     tradeType.append(row[3])
+                    tSize = int(row[4])
                     tradeSize.append(int(row[4]))
+                    tPrice = float(row[5])
                     tradePrice.append(float(row[5]))
 #                        print("Trades ",tradeDate[-1]," ",tradePrice[-1])
                     tradeCnt = cnt
     if tradeCnt > 0:
+        tradeDate.append(d[-1])
+        tradeSymbol.append(tSymbol)
+        tradeVal1.append(1)
+        tradePrice.append(c[-1])
         trades.setLoadDraw(False,True)
         w.Button5.configure(state = "disable")
     loadAndDraw(False,True,0,indicatorList,trades)
@@ -181,7 +220,7 @@ def loadAndDraw(load,draw,move,indicatorList,trades):
             outPutStr = str(d[indexVal]) + " " +str(o[indexVal])+ " " +str(h[indexVal])+ " " +str(l[indexVal])+ " " + str(c[indexVal]) # chosing the font
             outPutStr1 = ""
             outPutStr2 = ""
-            if len(indicatorList) !=0:
+            if indicatorList is not None:
                 if "bollingerBand" in indicatorList:
                     indicIndex = indicatorList.index("bollingerBand")
                     if barNumber <= len(bolBandList):
@@ -225,7 +264,7 @@ def loadAndDraw(load,draw,move,indicatorList,trades):
             for row in f_csv:
                 numCols = len(row)
                 cnt += 1
-                d.append(int(row[0]))
+                d.append(parseDate(row[0]))
 #                dt.append(datetime.datetime.strptime(row[0],'%Y%m%d'))
                 o.append(float(row[1]))
                 h.append(float(row[2]))
@@ -243,13 +282,14 @@ def loadAndDraw(load,draw,move,indicatorList,trades):
         xDate = list()
         yVal = list()
         zVal = list()
+        numBarsPlot = 98
         w.Button5.configure(state = "normal")
         w.Entry1.delete(0,"end")
-        w.Entry1.insert(0,str(d[-95]))
+        w.Entry1.insert(0,str(d[-numBarsPlot]))
  #       w.Entry2.delete(0,"end")
  #       w.Entry2.insert(0,"90")
-        print("D[-90] = ",d[-95])
-        numBarsPlot = 98
+        print("D[-90] = ",d[-numBarsPlot])
+
         w.Scale1.configure(from_= numBarsPlot)
         w.Scale1.configure(to=len(d)-1)
         w.Scale1.set(len(d)-1)
@@ -349,7 +389,7 @@ def loadAndDraw(load,draw,move,indicatorList,trades):
             trtl.color("lime")
             trtl.goto(m*distTweenBars,h[i]*scaleMult)
             trtl.pendown()
-            trtl.pensize(2)
+            trtl.pensize(1)
             trtl.goto(m*distTweenBars,l[i]*scaleMult)
             trtl.penup()
             trtl.goto(m*distTweenBars,c[i]*scaleMult)
@@ -487,7 +527,7 @@ def loadAndDraw(load,draw,move,indicatorList,trades):
             while debugTradeDate <= debugDate:
                 n +=1
                 debugTradeDate = tradeDate[n]
-            m = 0
+            m = -15
             for i in range(startPt,startPt+numBarsPlot):
                 m = m + 1
                 debugDate = d[i]
@@ -497,39 +537,44 @@ def loadAndDraw(load,draw,move,indicatorList,trades):
                     while debugTradeDate == d[i]:
                         tradesToday+=1
                         tradesTodayCnt+=1
-                        if tradesTodayCnt >= len(tradeDate):
+                        if tradesTodayCnt > len(tradeDate):
                             debugTradeDate = -1
                             tradesToday -=1
                         else:
-                            debugTradeDate = tradeDate[tradesTodayCnt]
-                    print("Found Trades ",tradesToday)
+                            if tradesTodayCnt == len(tradeDate):
+                                debugTradeDate = tradeDate[-1] + 1
+                            else:
+                                debugTradeDate = tradeDate[tradesTodayCnt]
+                    print("Found Trades ",tradesToday," ",debugTradeDate)
                     for k in range(tradesToday):
                         tradeValue = tradePrice[n]
                         nextTradeValue = c[startPt+numBarsPlot-1]
-                        if n < len(tradePrice):
+                        if n < len(tradePrice)-1:
                             nextTradeValue = tradePrice[n+1]
+                        else:
+                            nextTradeValue = c[-1]
                         if tradeType[n] == "buy":
-                            trtl.goto(m*10-5,tradeValue - hhllDiff *.03)
-                            trtl.pensize(3)
+                            trtl.goto(m*distTweenBars-5,tradeValue - hhllDiff *.03)
+                            trtl.pensize(2)
                             trtl.pendown()
                             trtl.color("Green")
-                            trtl.goto(m*10,tradeValue)
-                            trtl.goto(m*10+5,tradeValue - hhllDiff *.03)
+                            trtl.goto(m*distTweenBars,tradeValue)
+                            trtl.goto(m*distTweenBars+5,tradeValue - hhllDiff *.03)
                             trtl.penup()
-                            trtl.goto(m*10,tradeValue)
+                            trtl.goto(m*distTweenBars,tradeValue)
                             trtl.pendown()
                             trtl.pencolor("Red")
                             if nextTradeValue > tradeValue: trtl.pencolor("Green")
     #                        trtl.penup()
                         if tradeType[n] == "sell":
-                            trtl.goto(m*10-5,tradeValue + hhllDiff *.03)
-                            trtl.pensize(3)
+                            trtl.goto(m*distTweenBars-5,tradeValue + hhllDiff *.03)
+                            trtl.pensize(2)
                             trtl.pendown()
                             trtl.color("Red")
-                            trtl.goto(m*10,tradeValue)
-                            trtl.goto(m*10+5,tradeValue + hhllDiff *.03)
+                            trtl.goto(m*distTweenBars,tradeValue)
+                            trtl.goto(m*distTweenBars+5,tradeValue + hhllDiff *.03)
                             trtl.penup()
-                            trtl.goto(m*10,tradeValue)
+                            trtl.goto(m*distTweenBars,tradeValue)
                             trtl.pendown()
                             trtl.pencolor("Red")
                             if nextTradeValue < tradeValue: trtl.pencolor("Green")
@@ -537,18 +582,18 @@ def loadAndDraw(load,draw,move,indicatorList,trades):
 
                         if tradeType[n] == "liqLong" or tradeType[n] == "liqShort":
     #                        trtl.penup()
-                            trtl.goto(m*10-5, tradeValue)
+                            trtl.goto(m*distTweenBars-5, tradeValue)
                             trtl.color("Blue")
-                            trtl.pensize(4)
+                            trtl.pensize(3)
                             trtl.pendown()
-                            trtl.goto(m*10+5, tradeValue)
+                            trtl.goto(m*distTweenBars+5, tradeValue)
                             trtl.penup()
                         trtl.pensize(1)
                         print("Found a trade: ",tradeValue," ",nextTradeValue)
                         n+=1
                         if n < len(tradeDate): debugTradeDate = tradeDate[n]
             if i == startPt + numBarsPlot -1 and trtl.isdown():
-                trtl.goto(m*10,nextTradeValue)
+                trtl.goto(m*distTweenBars,nextTradeValue)
                 trtl.penup()
 
 
@@ -621,6 +666,10 @@ def destroy_window():
 def loadData():
     loadAndDraw(True,True,0,indicList,tradeInfo)
 
+def getTrades():
+    manageTrades(tradeInfo,indicList)
+
+
 def upDateScale(EVENT=None):
     global w
     updateDateInWindow()
@@ -633,7 +682,3 @@ def upDateScale(EVENT=None):
 if __name__ == '__main__':
     import TradingSimula_18Chart
     TradingSimula_18Chart.vp_start_gui()
-
-
-
-
